@@ -1,154 +1,514 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>HC計算ツール</title>
-<link rel="icon" type="image/png" href="favicon-rje1.png">
-<style>
-body {
-  font-family: sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 20px;
-}
-.container {
-  max-width: 900px;
-  margin: auto;
-}
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-.card {
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
-  border-left: 8px solid;
-}
-input {
-  width: 100%;
-  padding: 6px;
-  margin-bottom: 6px;
-}
-.result {
-  font-size: 18px;
-  font-weight: bold;
-}
-.summary {
-  margin-top: 20px;
-  padding: 15px;
-  background: #222;
-  color: white;
-  border-radius: 10px;
-  font-size: 20px;
-}
-.negative {
-  color: #ff4d4d;
-}
-@media(max-width:700px){
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>作業時間・HC計算</title>
+  <link rel="icon" type="image/png" href="favicon-rje1.png">
+
+  <style>
+    :root{
+      --bg0:#0b1220;
+      --bg1:#0f1b33;
+      --card:#0f1a30cc;
+      --card2:#0c1427cc;
+      --text:#e9eefc;
+      --muted:#a8b3d6;
+      --line:#233155;
+      --shadow: 0 16px 40px rgba(0,0,0,.35);
+      --radius:16px;
+      --neg:#ff4d6d;
+      --pos:#8ef0b5;
+      --focus:#7aa8ff;
+      --chip:#142346;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    /* ライト環境でもそれっぽく見えるように */
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg0:#f6f8ff;
+        --bg1:#eef2ff;
+        --card:#ffffffcc;
+        --card2:#ffffffcc;
+        --text:#0d1630;
+        --muted:#55618a;
+        --line:#d7def5;
+        --shadow: 0 16px 40px rgba(12,18,32,.12);
+        --chip:#f0f3ff;
+      }
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+      background:
+        radial-gradient(1200px 800px at 10% -10%, rgba(122,168,255,.35), transparent 60%),
+        radial-gradient(900px 700px at 110% 10%, rgba(240,142,58,.25), transparent 55%),
+        radial-gradient(900px 700px at 50% 110%, rgba(46,204,113,.20), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 22px 18px 110px;
+    }
+
+    /* ヘッダー */
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .title h1{
+      margin:0;
+      font-size: clamp(18px, 2.6vw, 24px);
+      letter-spacing: .02em;
+      line-height:1.2;
+    }
+    .title p{
+      margin:0;
+      color:var(--muted);
+      font-size: 13px;
+      line-height:1.45;
+    }
+
+    .meta{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .pill{
+      background: var(--chip);
+      border:1px solid var(--line);
+      padding:10px 12px;
+      border-radius: 999px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      box-shadow: 0 10px 18px rgba(0,0,0,.10);
+      backdrop-filter: blur(10px);
+    }
+    .pill label{
+      color: var(--muted);
+      font-size: 12px;
+      white-space:nowrap;
+    }
+    .pill input{
+      width: 110px;
+      background: transparent;
+      border: none;
+      outline:none;
+      color: var(--text);
+      font-weight: 700;
+      font-family: var(--mono);
+      font-size: 14px;
+      text-align:right;
+    }
+    .pill input:focus{
+      color: var(--text);
+    }
+
+    /* グリッド */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width: 780px){
+      .grid{ grid-template-columns: 1fr; }
+      .meta{ justify-content:flex-start; }
+      .pill input{ width: 120px; }
+    }
+
+    /* カード */
+    .card{
+      position:relative;
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+      transform: translateZ(0);
+    }
+    .accent{
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width: 10px;
+      background: var(--accent);
+      filter: drop-shadow(0 0 18px rgba(255,255,255,.08));
+    }
+    .cardInner{
+      padding: 14px 14px 12px 18px;
+    }
+
+    .cardHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .cardHead h2{
+      margin:0;
+      font-size: 15px;
+      letter-spacing:.02em;
+    }
+    .badge{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      border:1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .form{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px 10px;
+      margin-top:10px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .field.full{ grid-column: 1 / -1; }
+
+    .field span{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .inputWrap{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background: rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 10px;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .inputWrap:focus-within{
+      border-color: color-mix(in oklab, var(--focus), white 10%);
+      box-shadow: 0 0 0 4px color-mix(in oklab, var(--focus), transparent 80%);
+    }
+    input[type="number"]{
+      width:100%;
+      border:none;
+      outline:none;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      text-align:right;
+      appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button{
+      -webkit-appearance: none;
+      margin:0;
+    }
+    .unit{
+      color: var(--muted);
+      font-size: 12px;
+      white-space:nowrap;
+    }
+
+    /* 結果表示 */
+    .kpi{
+      margin-top: 12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .kpiBox{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.03);
+    }
+    .kpiLabel{
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom:6px;
+    }
+    .kpiValue{
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .sub{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top:6px;
+    }
+
+    /* サマリー（下部） */
+    .summary{
+      position: fixed;
+      left:0; right:0; bottom:0;
+      padding: 12px 16px 16px;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,.35));
+      pointer-events:none;
+    }
+    .summaryInner{
+      max-width: 980px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(10,15,30,.88), rgba(10,15,30,.72));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      backdrop-filter: blur(12px);
+      pointer-events:auto;
+    }
+    @media (prefers-color-scheme: light){
+      .summary{ background: linear-gradient(180deg, transparent, rgba(255,255,255,.55)); }
+      .summaryInner{
+        background: linear-gradient(180deg, rgba(255,255,255,.90), rgba(255,255,255,.75));
+      }
+    }
+
+    .sumRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 780px){
+      .sumRow{ grid-template-columns: 1fr; }
+    }
+    .sumBox{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.03);
+    }
+    .sumTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+    }
+    .sumLabel{
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .sumValue{
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    /* マイナス表示 */
+    .negative{ color: var(--neg); }
+  </style>
 </head>
+
 <body>
-<div class="container">
-  <h1>HC計算ツール</h1>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">
+        <h1>作業時間・HC計算</h1>
+        <p>FCST と Backlog をケースで入力。能力（ケース/時）から LH と必要HC を算出。出勤HC入力で不足もチェック。</p>
+      </div>
 
-  出勤HC（人数）:
-  <input type="number" id="shiftHC" value="0">
+      <div class="meta">
+        <div class="pill">
+          <label for="shiftHC">出勤HC</label>
+          <input id="shiftHC" type="number" value="0" min="0" step="1" />
+          <span class="unit">人</span>
+        </div>
+        <div class="pill" title="1人あたりの稼働時間（固定）">
+          <label>シフト</label>
+          <div style="font-family:var(--mono);font-weight:800;">8</div>
+          <span class="unit">h/人</span>
+        </div>
+      </div>
+    </div>
 
-  <div class="grid" id="cards"></div>
-
-  <div class="summary" id="summary">
-    合計LH: 0h<br>
-    合計HC: 0人<br>
-    不足LH: 0h<br>
-    不足HC: 0人
+    <div class="grid" id="cards"></div>
   </div>
-</div>
+
+  <div class="summary">
+    <div class="summaryInner">
+      <div class="sumRow">
+        <div class="sumBox">
+          <div class="sumTop">
+            <div class="sumLabel">合計LH</div>
+            <div class="sumValue" id="totalLH">0.00h</div>
+          </div>
+        </div>
+        <div class="sumBox">
+          <div class="sumTop">
+            <div class="sumLabel">合計HC</div>
+            <div class="sumValue" id="totalHC">0.00人</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sumRow">
+        <div class="sumBox">
+          <div class="sumTop">
+            <div class="sumLabel">不足LH（出勤LH − 必要LH）</div>
+            <div class="sumValue" id="diffLH">0.00h</div>
+          </div>
+        </div>
+        <div class="sumBox">
+          <div class="sumTop">
+            <div class="sumLabel">不足HC（出勤HC − 必要HC）</div>
+            <div class="sumValue" id="diffHC">0.00人</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
-const processes = [
-  {name:"Check In", color:"#3498db"},
-  {name:"IDRT", color:"#2ecc71"},
-  {name:"Case Stow", color:"#f39c12"},
-  {name:"Case Receive", color:"#e74c3c"}
-];
+  const SHIFT_HOURS = 8;
 
-const container = document.getElementById("cards");
+  const processes = [
+    { name:"Check In",     color:"#3498db" },
+    { name:"IDRT",         color:"#2ecc71" },
+    { name:"Case Stow",    color:"#f39c12" },
+    { name:"Case Receive", color:"#e74c3c" }
+  ];
 
-processes.forEach((p,i)=>{
-  const card = document.createElement("div");
-  card.className = "card";
-  card.style.borderColor = p.color;
+  const cards = document.getElementById("cards");
 
-  card.innerHTML = `
-    <h2>${p.name}</h2>
-    FCST:<br><input type="number" id="fcst${i}" value="0">
-    Backlog:<br><input type="number" id="backlog${i}" value="0">
-    能力(ケース/時):<br><input type="number" id="rate${i}" value="1">
-    <div class="result" id="res${i}">
-      LH: 0h<br>
-      HC: 0人
-    </div>
-  `;
-  container.appendChild(card);
+  function makeCard(p, i){
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.setProperty("--accent", p.color);
 
-  ["fcst","backlog","rate"].forEach(id=>{
-    card.querySelector(`#${id}${i}`).addEventListener("input", calc);
-  });
-});
+    card.innerHTML = `
+      <div class="accent"></div>
+      <div class="cardInner">
+        <div class="cardHead">
+          <h2>${p.name}</h2>
+          <div class="badge">工程 ${i+1}</div>
+        </div>
 
-document.getElementById("shiftHC").addEventListener("input", calc);
+        <div class="form">
+          <div class="field">
+            <span>FCST</span>
+            <div class="inputWrap">
+              <input type="number" id="fcst${i}" value="0" step="1">
+              <div class="unit">case</div>
+            </div>
+          </div>
 
-function formatValue(value, unit){
-  if(value < 0){
-    return `<span class="negative">${value.toFixed(2)}${unit}</span>`;
+          <div class="field">
+            <span>Backlog</span>
+            <div class="inputWrap">
+              <input type="number" id="backlog${i}" value="0" step="1">
+              <div class="unit">case</div>
+            </div>
+          </div>
+
+          <div class="field full">
+            <span>平均処理能力</span>
+            <div class="inputWrap">
+              <input type="number" id="rate${i}" value="1" step="1">
+              <div class="unit">case/h</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpiBox">
+            <div class="kpiLabel">必要時間（LH）</div>
+            <div class="kpiValue" id="lh${i}">0.00h</div>
+            <div class="sub">LH = (FCST + Backlog) ÷ 能力</div>
+          </div>
+          <div class="kpiBox">
+            <div class="kpiLabel">必要HC</div>
+            <div class="kpiValue" id="hc${i}">0.00人</div>
+            <div class="sub">HC = LH ÷ ${SHIFT_HOURS}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    ["fcst","backlog","rate"].forEach(key=>{
+      card.querySelector(`#${key}${i}`).addEventListener("input", calc);
+    });
+
+    return card;
   }
-  return `${value.toFixed(2)}${unit}`;
-}
 
-function calc(){
-  let totalLH = 0;
-  let totalHC = 0;
+  processes.forEach((p,i)=> cards.appendChild(makeCard(p,i)));
+  document.getElementById("shiftHC").addEventListener("input", calc);
 
-  processes.forEach((p,i)=>{
-    const fcst = Number(document.getElementById(`fcst${i}`).value);
-    const backlog = Number(document.getElementById(`backlog${i}`).value);
-    const rate = Number(document.getElementById(`rate${i}`).value);
+  function fmt(value, unit){
+    const v = Number.isFinite(value) ? value : 0;
+    const text = `${v.toFixed(2)}${unit}`;
+    return (v < 0) ? `<span class="negative">${text}</span>` : text;
+  }
 
-    let lh = 0;
-    if(rate > 0){
-      lh = (fcst + backlog) / rate;
+  function setHTML(id, html){
+    document.getElementById(id).innerHTML = html;
+  }
+
+  function calc(){
+    let totalLH = 0;
+    let totalHC = 0;
+
+    for(let i=0;i<processes.length;i++){
+      const fcst = Number(document.getElementById(`fcst${i}`).value);
+      const backlog = Number(document.getElementById(`backlog${i}`).value);
+      const rate = Number(document.getElementById(`rate${i}`).value);
+
+      let lh = 0;
+      if(rate > 0){
+        lh = (fcst + backlog) / rate;
+      }else{
+        lh = 0; // 0以下は計算不可なので0扱い
+      }
+      const hc = lh / SHIFT_HOURS;
+
+      totalLH += lh;
+      totalHC += hc;
+
+      setHTML(`lh${i}`, fmt(lh, "h"));
+      setHTML(`hc${i}`, fmt(hc, "人"));
     }
-    const hc = lh / 8;
 
-    totalLH += lh;
-    totalHC += hc;
+    const shiftHC = Number(document.getElementById("shiftHC").value);
+    const availableLH = shiftHC * SHIFT_HOURS;
 
-    document.getElementById(`res${i}`).innerHTML =
-      `LH: ${formatValue(lh,"h")}<br>
-       HC: ${formatValue(hc,"人")}`;
-  });
+    const diffLH = availableLH - totalLH; // マイナスなら不足
+    const diffHC = shiftHC - totalHC;     // マイナスなら不足
 
-  const shiftHC = Number(document.getElementById("shiftHC").value);
-  const availableLH = shiftHC * 8;
+    setHTML("totalLH", fmt(totalLH, "h"));
+    setHTML("totalHC", fmt(totalHC, "人"));
+    setHTML("diffLH",  fmt(diffLH,  "h"));
+    setHTML("diffHC",  fmt(diffHC,  "人"));
+  }
 
-  const diffLH = availableLH - totalLH;
-  const diffHC = shiftHC - totalHC;
-
-  document.getElementById("summary").innerHTML =
-    `合計LH: ${formatValue(totalLH,"h")}<br>
-     合計HC: ${formatValue(totalHC,"人")}<br>
-     不足LH: ${formatValue(diffLH,"h")}<br>
-     不足HC: ${formatValue(diffHC,"人")}`;
-}
-
-calc();
+  calc();
 </script>
 </body>
 </html>
+
 
