@@ -357,6 +357,17 @@ function calc(){
 }
 
 calc();
+// 入力欄をクリック/タップしたら全選択 → そのまま上書きできる
+function enableSmartInput() {
+  document.querySelectorAll('input[type="number"]').forEach(inp => {
+    const selectAll = () => setTimeout(() => inp.select(), 0);
+    inp.addEventListener('focus', selectAll);
+    inp.addEventListener('click', selectAll);
+  });
+}
+
+// DOMとカード生成が終わってから確実に付与
+setTimeout(enableSmartInput, 0);
 </script>
 </body>
 </html>
