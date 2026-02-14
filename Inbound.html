@@ -1,229 +1,154 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>作業時間・HC計算</title>
-  <link rel="icon" type="image/png" href="favicon-rje1.png">
-  <style>
-    :root {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
-    }
-
-    body {
-      margin: 20px;
-      background: #f4f6f8;
-      color: #111;
-    }
-
-    h1 {
-      font-size: 22px;
-      margin-bottom: 16px;
-    }
-
-    .wrap {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    /* 2列レイアウト */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-    }
-
-    /* カード共通 */
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-      border-left: 6px solid;
-    }
-
-    .card h2 {
-      margin-top: 0;
-      font-size: 18px;
-    }
-
-    /* 工程別カラー */
-    .checkin { border-color: #3b82f6; }
-    .idrt { border-color: #10b981; }
-    .stow { border-color: #f59e0b; }
-    .receive { border-color: #ef4444; }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 4px;
-      margin: 8px 0;
-    }
-
-    label {
-      font-size: 13px;
-      color: #444;
-    }
-
-    input {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    .out {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px dashed #ddd;
-      display: flex;
-      justify-content: space-between;
-      font-weight: bold;
-      font-size: 15px;
-    }
-
-    /* 下部サマリー */
-    .summary {
-      margin-top: 20px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .total-box {
-      background: #111;
-      color: #fff;
-      padding: 16px;
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .lh-box {
-      background: #374151;
-      color: #fff;
-      padding: 14px;
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 17px;
-      font-weight: bold;
-    }
-
-    /* スマホ対応 */
-    @media (max-width: 600px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<title>HC計算ツール</title>
+<link rel="icon" type="image/png" href="favicon-rje1.png">
+<style>
+body {
+  font-family: sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 20px;
+}
+.container {
+  max-width: 900px;
+  margin: auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  border-left: 8px solid;
+}
+input {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+.result {
+  font-size: 18px;
+  font-weight: bold;
+}
+.summary {
+  margin-top: 20px;
+  padding: 15px;
+  background: #222;
+  color: white;
+  border-radius: 10px;
+  font-size: 20px;
+}
+.negative {
+  color: #ff4d4d;
+}
+@media(max-width:700px){
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 </head>
 <body>
-<div class="wrap">
-  <h1>作業時間・HC計算</h1>
+<div class="container">
+  <h1>HC計算ツール</h1>
+
+  出勤HC（人数）:
+  <input type="number" id="shiftHC" value="0">
 
   <div class="grid" id="cards"></div>
 
-  <div class="summary">
-    <div class="lh-box">
-      <div>合計LH（総作業時間）</div>
-      <div id="grandLH">0.00 h</div>
-    </div>
-
-    <div class="total-box">
-      <div>合計必要HC（8h基準）</div>
-      <div id="grandHC">0.00 人</div>
-    </div>
+  <div class="summary" id="summary">
+    合計LH: 0h<br>
+    合計HC: 0人<br>
+    不足LH: 0h<br>
+    不足HC: 0人
   </div>
 </div>
 
 <script>
 const processes = [
-  { key: "checkin", name: "Check In", class: "checkin" },
-  { key: "idrt", name: "IDRT", class: "idrt" },
-  { key: "stow", name: "Case Stow", class: "stow" },
-  { key: "receive", name: "Case Receive", class: "receive" },
+  {name:"Check In", color:"#3498db"},
+  {name:"IDRT", color:"#2ecc71"},
+  {name:"Case Stow", color:"#f39c12"},
+  {name:"Case Receive", color:"#e74c3c"}
 ];
 
-const WORK_HOURS = 8;
+const container = document.getElementById("cards");
 
-function calcHours(fcst, backlog, rate){
-  const total = (fcst || 0) + (backlog || 0);
-  if (!rate || rate <= 0) return 0;
-  return total / rate;
+processes.forEach((p,i)=>{
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.borderColor = p.color;
+
+  card.innerHTML = `
+    <h2>${p.name}</h2>
+    FCST:<br><input type="number" id="fcst${i}" value="0">
+    Backlog:<br><input type="number" id="backlog${i}" value="0">
+    能力(ケース/時):<br><input type="number" id="rate${i}" value="1">
+    <div class="result" id="res${i}">
+      LH: 0h<br>
+      HC: 0人
+    </div>
+  `;
+  container.appendChild(card);
+
+  ["fcst","backlog","rate"].forEach(id=>{
+    card.querySelector(`#${id}${i}`).addEventListener("input", calc);
+  });
+});
+
+document.getElementById("shiftHC").addEventListener("input", calc);
+
+function formatValue(value, unit){
+  if(value < 0){
+    return `<span class="negative">${value.toFixed(2)}${unit}</span>`;
+  }
+  return `${value.toFixed(2)}${unit}`;
 }
 
-function buildUI(){
-  const root = document.getElementById("cards");
-  root.innerHTML = "";
-
-  for (const p of processes){
-    const card = document.createElement("div");
-    card.className = `card ${p.class}`;
-    card.innerHTML = `
-      <h2>${p.name}</h2>
-
-      <div class="row">
-        <label>FCST（ケース）</label>
-        <input id="${p.key}-fcst" type="number" value="0" min="0">
-      </div>
-
-      <div class="row">
-        <label>Backlog（ケース）</label>
-        <input id="${p.key}-backlog" type="number" value="0" min="0">
-      </div>
-
-      <div class="row">
-        <label>平均処理能力（ケース/時）</label>
-        <input id="${p.key}-rate" type="number" value="0" min="0">
-      </div>
-
-      <div class="out">
-        <div>必要時間</div>
-        <div id="${p.key}-hours">0.00 h</div>
-      </div>
-
-      <div class="out">
-        <div>必要HC</div>
-        <div id="${p.key}-hc">0.00 人</div>
-      </div>
-    `;
-    root.appendChild(card);
-  }
-
-  for (const p of processes){
-    ["fcst","backlog","rate"].forEach(field => {
-      document.getElementById(`${p.key}-${field}`).addEventListener("input", recalcAll);
-    });
-  }
-}
-
-function recalcAll(){
-  let totalHC = 0;
+function calc(){
   let totalLH = 0;
+  let totalHC = 0;
 
-  for (const p of processes){
-    const fcst = Number(document.getElementById(`${p.key}-fcst`).value);
-    const backlog = Number(document.getElementById(`${p.key}-backlog`).value);
-    const rate = Number(document.getElementById(`${p.key}-rate`).value);
+  processes.forEach((p,i)=>{
+    const fcst = Number(document.getElementById(`fcst${i}`).value);
+    const backlog = Number(document.getElementById(`backlog${i}`).value);
+    const rate = Number(document.getElementById(`rate${i}`).value);
 
-    const hours = calcHours(fcst, backlog, rate);
-    const hc = hours / WORK_HOURS;
+    let lh = 0;
+    if(rate > 0){
+      lh = (fcst + backlog) / rate;
+    }
+    const hc = lh / 8;
 
-    document.getElementById(`${p.key}-hours`).textContent = hours.toFixed(2) + " h";
-    document.getElementById(`${p.key}-hc`).textContent = hc.toFixed(2) + " 人";
-
+    totalLH += lh;
     totalHC += hc;
-    totalLH += hours;
-  }
 
-  document.getElementById("grandHC").textContent = totalHC.toFixed(2) + " 人";
-  document.getElementById("grandLH").textContent = totalLH.toFixed(2) + " h";
+    document.getElementById(`res${i}`).innerHTML =
+      `LH: ${formatValue(lh,"h")}<br>
+       HC: ${formatValue(hc,"人")}`;
+  });
+
+  const shiftHC = Number(document.getElementById("shiftHC").value);
+  const availableLH = shiftHC * 8;
+
+  const diffLH = availableLH - totalLH;
+  const diffHC = shiftHC - totalHC;
+
+  document.getElementById("summary").innerHTML =
+    `合計LH: ${formatValue(totalLH,"h")}<br>
+     合計HC: ${formatValue(totalHC,"人")}<br>
+     不足LH: ${formatValue(diffLH,"h")}<br>
+     不足HC: ${formatValue(diffHC,"人")}`;
 }
 
-buildUI();
-recalcAll();
+calc();
 </script>
 </body>
 </html>
+
