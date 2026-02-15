@@ -19,7 +19,6 @@
       --neg:#d92d20;
       --focus:#2563eb;
 
-      --footer-h: 156px;
     }
 
     *{ box-sizing:border-box; }
@@ -34,7 +33,7 @@
       max-width: 1280px;
       margin: 0 auto;
       padding: 18px 16px;
-      padding-bottom: calc(var(--footer-h) + 24px + env(safe-area-inset-bottom));
+      padding-bottom: 24px;
     }
 
     .layout{
@@ -377,24 +376,13 @@
       letter-spacing: .02em;
     }
 
-    .footer{
-      position: fixed;
-      left: 12px;
-      right: 12px;
-      bottom: calc(12px + env(safe-area-inset-bottom));
-      z-index: 50;
-      pointer-events: none;
-    }
-    .footerInner{
-      max-width: 1280px;
-      margin: 0 auto;
+    .summaryArea{
+      margin-top: 14px;
       background: rgba(255,255,255,.92);
       border: 1px solid var(--line);
       border-radius: 18px;
       box-shadow: var(--shadow);
       padding: 12px;
-      backdrop-filter: blur(8px);
-      pointer-events: auto;
     }
 
     .sumGrid{
@@ -424,10 +412,152 @@
       font-weight: 900;
       letter-spacing:.02em;
     }
+
+    .appShell{
+      display:flex;
+      min-height:100vh;
+    }
+    .navSidebar{
+      width: 220px;
+      background:#111827;
+      color:#f9fafb;
+      padding:18px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+    .navTitle{
+      font-size:14px;
+      font-weight:900;
+      margin:0 0 6px;
+      opacity:.9;
+    }
+    .navBtn{
+      border:1px solid rgba(255,255,255,.18);
+      background:transparent;
+      color:inherit;
+      text-align:left;
+      font-weight:800;
+      border-radius:10px;
+      padding:10px 12px;
+      cursor:pointer;
+    }
+    .navBtn.active{
+      background:#f9fafb;
+      color:#111827;
+      border-color:#f9fafb;
+    }
+    .appView{
+      flex:1;
+      display:none;
+      min-width:0;
+    }
+    .appView.active{ display:block; }
+
+    .codeWrap{
+      max-width:980px;
+      margin:0 auto;
+      padding:18px 16px;
+    }
+    .codeGrid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .codeResult{
+      min-height:220px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#f7f8fa;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+    .codeResult svg, .codeResult canvas, .codeResult img{
+      max-width:100%;
+      height:auto;
+    }
+    .codeTools{
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom:10px;
+    }
+    .iconBtn{
+      border:1px solid var(--line);
+      background:white;
+      border-radius:10px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-size:16px;
+      line-height:1;
+    }
+    .codeList{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .codeItem{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+      display:grid;
+      gap:12px;
+    }
+    .codeItemHead{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .codeSettings{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      gap:10px;
+    }
+    .codeActions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .tinyBtn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      padding:8px 10px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    @media (max-width:980px){
+      .appShell{ flex-direction:column; }
+      .navSidebar{
+        width:100%;
+        height:auto;
+        position:static;
+        flex-direction:row;
+        flex-wrap:wrap;
+        align-items:center;
+      }
+      .navTitle{ width:100%; }
+      .codeGrid{ grid-template-columns:1fr; }
+      .codeSettings{ grid-template-columns:1fr 1fr; }
+    }
   </style>
 </head>
 
 <body>
+  <div class="appShell">
+    <aside class="navSidebar">
+      <p class="navTitle">アプリ切り替え</p>
+      <button class="navBtn active" data-app="workApp">作業時間・HC計算</button>
+      <button class="navBtn" data-app="codeApp">QR・バーコード作成</button>
+    </aside>
+
+    <section class="appView active" id="workApp">
   <div class="wrap">
     <div class="layout">
       <main>
@@ -445,6 +575,27 @@
         </div>
 
         <div class="grid" id="cards"></div>
+        <div class="summaryArea">
+          <div class="sumGrid">
+            <div class="sumBox">
+              <div class="sumLabel">合計LH</div>
+              <div class="sumValue" id="totalLH">0.00h</div>
+            </div>
+            <div class="sumBox">
+              <div class="sumLabel">合計HC</div>
+              <div class="sumValue" id="totalHC">0.00人</div>
+            </div>
+            <div class="sumBox">
+              <div class="sumLabel">不足LH（出勤LH − 必要LH）</div>
+              <div class="sumValue" id="diffLH">0.00h</div>
+            </div>
+            <div class="sumBox">
+              <div class="sumLabel">不足HC（出勤HC − 必要HC）</div>
+              <div class="sumValue" id="diffHC">0.00人</div>
+            </div>
+          </div>
+        </div>
+
       </main>
 
       <aside class="side">
@@ -511,29 +662,29 @@
     </div>
   </div>
 
-  <div class="footer" id="footer">
-    <div class="footerInner" id="footerInner">
-      <div class="sumGrid">
-        <div class="sumBox">
-          <div class="sumLabel">合計LH</div>
-          <div class="sumValue" id="totalLH">0.00h</div>
+
+    </section>
+
+    <section class="appView" id="codeApp">
+      <div class="codeWrap">
+        <div class="top">
+          <div>
+            <h1>QR・バーコード作成</h1>
+            <p class="hint">複数のQR/バーコードを作成して、画像保存・印刷できます。</p>
+          </div>
         </div>
-        <div class="sumBox">
-          <div class="sumLabel">合計HC</div>
-          <div class="sumValue" id="totalHC">0.00人</div>
+
+        <div class="codeTools">
+          <button class="iconBtn" id="addCodeItem" title="追加">➕</button>
         </div>
-        <div class="sumBox">
-          <div class="sumLabel">不足LH（出勤LH − 必要LH）</div>
-          <div class="sumValue" id="diffLH">0.00h</div>
-        </div>
-        <div class="sumBox">
-          <div class="sumLabel">不足HC（出勤HC − 必要HC）</div>
-          <div class="sumValue" id="diffHC">0.00人</div>
-        </div>
+
+        <div class="codeList" id="codeList"></div>
       </div>
-    </div>
+    </section>
   </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
   const processes = [
     { name:"Check In",     color:"#3498db" },
@@ -772,13 +923,6 @@
     setHTML("diffLH",  fmt(diffLH,  "h"));
     setHTML("diffHC",  fmt(diffHC,  "人"));
 
-    adjustFooterSpace();
-  }
-
-  function adjustFooterSpace(){
-    const footerInner = document.getElementById("footerInner");
-    const h = footerInner ? footerInner.offsetHeight : 156;
-    document.documentElement.style.setProperty("--footer-h", `${h}px`);
   }
 
   // Smart Input：数値はクリックで全選択。timeも可能な範囲で選択。
@@ -805,13 +949,171 @@
     });
   }
 
-  window.addEventListener("resize", adjustFooterSpace);
-  window.addEventListener("orientationchange", adjustFooterSpace);
-
   updateBacklogPreview();
-  adjustFooterSpace();
   calc();
   setTimeout(enableSmartInput, 0);
+
+  const navButtons = document.querySelectorAll(".navBtn");
+  const appViews = document.querySelectorAll(".appView");
+
+  navButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.app;
+      navButtons.forEach(b => b.classList.toggle("active", b === btn));
+      appViews.forEach(view => view.classList.toggle("active", view.id === target));
+    });
+  });
+
+  const codeList = document.getElementById("codeList");
+  const addCodeItemBtn = document.getElementById("addCodeItem");
+  let codeItemSeq = 0;
+
+  function createCodeItem(defaultText = "RJE1-TOOLS"){
+    codeItemSeq += 1;
+    const item = document.createElement("div");
+    item.className = "codeItem";
+    item.dataset.itemId = String(codeItemSeq);
+    item.innerHTML = `
+      <div class="codeItemHead">
+        <strong>コード #${codeItemSeq}</strong>
+        <button class="iconBtn removeItem" title="消去">🗑️</button>
+      </div>
+
+      <div class="field full">
+        <span>文字列</span>
+        <div class="inputWrap"><input type="text" class="codeText" value="${defaultText}" style="width:100%; border:none; outline:none; background:transparent; font-weight:800;"></div>
+      </div>
+
+      <div class="codeSettings">
+        <div class="field"><span>QRサイズ(px)</span><div class="inputWrap"><input type="number" class="qrSize" value="180" min="60" step="10"></div></div>
+        <div class="field"><span>QR濃色</span><div class="inputWrap"><input type="color" class="qrDark" value="#000000"></div></div>
+        <div class="field"><span>QR背景色</span><div class="inputWrap"><input type="color" class="qrLight" value="#ffffff"></div></div>
+        <div class="field"><span>バー太さ</span><div class="inputWrap"><input type="number" class="barWidth" value="2" min="1" step="0.5"></div></div>
+        <div class="field"><span>バー高さ</span><div class="inputWrap"><input type="number" class="barHeight" value="70" min="30" step="5"></div></div>
+        <div class="field"><span>バー色</span><div class="inputWrap"><input type="color" class="barColor" value="#111827"></div></div>
+      </div>
+
+      <div class="codeGrid">
+        <div>
+          <div class="hint" style="margin-bottom:6px;">QRコード</div>
+          <div class="codeResult"><div class="qrCode"></div></div>
+        </div>
+        <div>
+          <div class="hint" style="margin-bottom:6px;">バーコード（CODE128）</div>
+          <div class="codeResult"><svg class="barCode"></svg></div>
+        </div>
+      </div>
+
+      <div class="codeActions">
+        <button class="tinyBtn dlQrPng">QR PNG</button>
+        <button class="tinyBtn dlQrJpg">QR JPEG</button>
+        <button class="tinyBtn dlBarPng">Bar PNG</button>
+        <button class="tinyBtn dlBarJpg">Bar JPEG</button>
+        <button class="tinyBtn printCode">印刷</button>
+      </div>
+    `;
+
+    item.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => renderCodeItem(item)));
+    item.querySelector(".removeItem").addEventListener("click", () => {
+      item.remove();
+      if(!codeList.children.length) createCodeItem();
+    });
+
+    item.querySelector(".dlQrPng").addEventListener("click", () => downloadQr(item, "image/png", "qr.png"));
+    item.querySelector(".dlQrJpg").addEventListener("click", () => downloadQr(item, "image/jpeg", "qr.jpg"));
+    item.querySelector(".dlBarPng").addEventListener("click", () => downloadBarcode(item, "image/png", "barcode.png"));
+    item.querySelector(".dlBarJpg").addEventListener("click", () => downloadBarcode(item, "image/jpeg", "barcode.jpg"));
+    item.querySelector(".printCode").addEventListener("click", () => printCodeItem(item));
+
+    codeList.appendChild(item);
+    renderCodeItem(item);
+  }
+
+  function renderCodeItem(item){
+    const text = (item.querySelector(".codeText").value || " ").trim() || " ";
+    const qrSize = Math.max(60, Number(item.querySelector(".qrSize").value) || 180);
+    const qrDark = item.querySelector(".qrDark").value || "#000000";
+    const qrLight = item.querySelector(".qrLight").value || "#ffffff";
+    const barWidth = Math.max(1, Number(item.querySelector(".barWidth").value) || 2);
+    const barHeight = Math.max(30, Number(item.querySelector(".barHeight").value) || 70);
+    const barColor = item.querySelector(".barColor").value || "#111827";
+
+    const qrTarget = item.querySelector(".qrCode");
+    qrTarget.innerHTML = "";
+    new QRCode(qrTarget, {
+      text, width: qrSize, height: qrSize, colorDark: qrDark, colorLight: qrLight, correctLevel: QRCode.CorrectLevel.M
+    });
+
+    JsBarcode(item.querySelector(".barCode"), text, {
+      format: "CODE128", width: barWidth, height: barHeight, lineColor: barColor, displayValue: true, fontSize: 14, margin: 8
+    });
+  }
+
+  function triggerDownload(dataUrl, filename){
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = filename;
+    a.click();
+  }
+
+  function qrCanvas(item){
+    return item.querySelector(".qrCode canvas");
+  }
+
+  function downloadQr(item, type, name){
+    const canvas = qrCanvas(item);
+    if(!canvas) return;
+    triggerDownload(canvas.toDataURL(type, 0.92), name);
+  }
+
+  function svgToDataUrl(svg){
+    const xml = new XMLSerializer().serializeToString(svg);
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+  }
+
+  function downloadBarcode(item, type, name){
+    const svg = item.querySelector(".barCode");
+    if(!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const canvas = document.createElement("canvas");
+    const w = Math.max(1, Math.ceil(rect.width));
+    const h = Math.max(1, Math.ceil(rect.height));
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if(type === "image/jpeg") {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,w,h);
+    }
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, w, h);
+      triggerDownload(canvas.toDataURL(type, 0.92), name);
+    };
+    img.src = svgToDataUrl(svg);
+  }
+
+  function printCodeItem(item){
+    const qr = qrCanvas(item);
+    const barSvg = item.querySelector(".barCode");
+    if(!qr || !barSvg) return;
+    const barImgUrl = svgToDataUrl(barSvg);
+    const w = window.open("", "_blank");
+    if(!w) return;
+    w.document.write(`
+      <html><head><title>Print Code</title></head>
+      <body style="font-family:sans-serif; padding:20px;">
+        <h3>${item.querySelector(".codeText").value || ""}</h3>
+        <img src="${qr.toDataURL("image/png")}" style="max-width:260px; display:block; margin-bottom:14px;">
+        <img src="${barImgUrl}" style="max-width:420px; display:block;">
+      </body></html>
+    `);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  }
+
+  addCodeItemBtn.addEventListener("click", () => createCodeItem(""));
+  createCodeItem();
 </script>
 </body>
 </html>
