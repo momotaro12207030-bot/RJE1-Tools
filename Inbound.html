@@ -424,10 +424,100 @@
       font-weight: 900;
       letter-spacing:.02em;
     }
+
+    .appShell{
+      display:flex;
+      min-height:100vh;
+    }
+    .navSidebar{
+      width: 220px;
+      background:#111827;
+      color:#f9fafb;
+      padding:18px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+    .navTitle{
+      font-size:14px;
+      font-weight:900;
+      margin:0 0 6px;
+      opacity:.9;
+    }
+    .navBtn{
+      border:1px solid rgba(255,255,255,.18);
+      background:transparent;
+      color:inherit;
+      text-align:left;
+      font-weight:800;
+      border-radius:10px;
+      padding:10px 12px;
+      cursor:pointer;
+    }
+    .navBtn.active{
+      background:#f9fafb;
+      color:#111827;
+      border-color:#f9fafb;
+    }
+    .appView{
+      flex:1;
+      display:none;
+      min-width:0;
+    }
+    .appView.active{ display:block; }
+
+    .codeWrap{
+      max-width:980px;
+      margin:0 auto;
+      padding:18px 16px;
+    }
+    .codeGrid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .codeResult{
+      min-height:220px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#f7f8fa;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+    .codeResult svg, .codeResult canvas, .codeResult img{
+      max-width:100%;
+      height:auto;
+    }
+    @media (max-width:980px){
+      .appShell{ flex-direction:column; }
+      .navSidebar{
+        width:100%;
+        height:auto;
+        position:static;
+        flex-direction:row;
+        flex-wrap:wrap;
+        align-items:center;
+      }
+      .navTitle{ width:100%; }
+      .codeGrid{ grid-template-columns:1fr; }
+    }
   </style>
 </head>
 
 <body>
+  <div class="appShell">
+    <aside class="navSidebar">
+      <p class="navTitle">アプリ切り替え</p>
+      <button class="navBtn active" data-app="workApp">作業時間・HC計算</button>
+      <button class="navBtn" data-app="codeApp">QR・バーコード作成</button>
+    </aside>
+
+    <section class="appView active" id="workApp">
   <div class="wrap">
     <div class="layout">
       <main>
@@ -534,6 +624,54 @@
     </div>
   </div>
 
+    </section>
+
+    <section class="appView" id="codeApp">
+      <div class="codeWrap">
+        <div class="top">
+          <div>
+            <h1>QR・バーコード作成</h1>
+            <p class="hint">入力した文字列から QR コードとバーコード（CODE128）を生成します。</p>
+          </div>
+        </div>
+
+        <div class="codeGrid">
+          <div class="panel">
+            <div class="panelHead">
+              <h3>入力</h3>
+            </div>
+            <div class="panelBody">
+              <div class="field full">
+                <span>コード化する文字列</span>
+                <div class="inputWrap">
+                  <input type="text" id="codeText" value="RJE1-TOOLS" style="width:100%; border:none; outline:none; background:transparent; font-weight:800;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panelHead">
+              <h3>プレビュー</h3>
+            </div>
+            <div class="panelBody">
+              <div>
+                <div class="hint" style="margin-bottom:6px;">QRコード</div>
+                <div class="codeResult"><div id="qrCode"></div></div>
+              </div>
+              <div>
+                <div class="hint" style="margin-bottom:6px;">バーコード（CODE128）</div>
+                <div class="codeResult"><svg id="barCode"></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
   const processes = [
     { name:"Check In",     color:"#3498db" },
@@ -812,6 +950,42 @@
   adjustFooterSpace();
   calc();
   setTimeout(enableSmartInput, 0);
+
+  const navButtons = document.querySelectorAll(".navBtn");
+  const appViews = document.querySelectorAll(".appView");
+
+  navButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.app;
+      navButtons.forEach(b => b.classList.toggle("active", b === btn));
+      appViews.forEach(view => view.classList.toggle("active", view.id === target));
+    });
+  });
+
+  let qrInstance = null;
+  function renderCodes(){
+    const text = (document.getElementById("codeText").value || " ").trim() || " ";
+    const qrTarget = document.getElementById("qrCode");
+    qrTarget.innerHTML = "";
+    qrInstance = new QRCode(qrTarget, {
+      text,
+      width: 180,
+      height: 180,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    JsBarcode("#barCode", text, {
+      format: "CODE128",
+      width: 2,
+      height: 70,
+      displayValue: true,
+      fontSize: 14,
+      margin: 8
+    });
+  }
+
+  document.getElementById("codeText").addEventListener("input", renderCodes);
+  renderCodes();
 </script>
 </body>
 </html>
