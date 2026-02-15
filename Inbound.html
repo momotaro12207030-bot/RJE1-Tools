@@ -8,7 +8,7 @@
 
   <style>
     :root{
-      --bg:#eef1f4;          /* 白寄りグレー */
+      --bg:#eef1f4;
       --card:#ffffff;
       --text:#111827;
       --muted:#6b7280;
@@ -16,10 +16,10 @@
       --shadow: 0 10px 24px rgba(16,24,40,.10);
       --radius:16px;
 
-      --neg:#d92d20;         /* マイナス赤 */
+      --neg:#d92d20;
       --focus:#2563eb;
 
-      --footer-h: 156px;     /* JSで更新 */
+      --footer-h: 156px;
     }
 
     *{ box-sizing:border-box; }
@@ -30,7 +30,6 @@
       color: var(--text);
     }
 
-    /* 画面が広いとき右側にパネルを出すため、横幅を広げる */
     .wrap{
       max-width: 1280px;
       margin: 0 auto;
@@ -38,7 +37,6 @@
       padding-bottom: calc(var(--footer-h) + 24px + env(safe-area-inset-bottom));
     }
 
-    /* メイン + 右サイド */
     .layout{
       display:grid;
       grid-template-columns: 1fr 320px;
@@ -99,7 +97,6 @@
       font-size: 12px;
     }
 
-    /* 工程カードのグリッド */
     .grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -179,6 +176,7 @@
       box-shadow: 0 0 0 4px color-mix(in oklab, var(--focus), transparent 82%);
       background: #ffffff;
     }
+
     input[type="number"]{
       width:100%;
       border:none;
@@ -195,6 +193,18 @@
       -webkit-appearance: none;
       margin:0;
     }
+
+    input[type="time"]{
+      width:100%;
+      border:none;
+      outline:none;
+      background: transparent;
+      text-align:left;
+      font-weight: 900;
+      font-size: 14px;
+      color: var(--text);
+    }
+
     .unit{
       font-size: 12px;
       color: var(--muted);
@@ -229,13 +239,14 @@
       color: var(--muted);
     }
 
-    /* マイナス表示 */
     .negative{ color: var(--neg); }
 
-    /* 右サイド：バックログ入力パネル */
     .side{
       position: sticky;
       top: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px; /* 下に勤務時間パネルを積む */
     }
     @media (max-width: 980px){
       .side{ position: static; }
@@ -338,7 +349,34 @@
       box-shadow: none;
     }
 
-    /* 下固定サマリー */
+    /* 勤務時間パネルの補助表示 */
+    .metaGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .metaGrid .field{ gap:6px; }
+    .metaRow{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: #f7f8fa;
+      border-radius: 14px;
+    }
+    .metaRow .label{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .metaRow .value{
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+
     .footer{
       position: fixed;
       left: 12px;
@@ -392,7 +430,6 @@
 <body>
   <div class="wrap">
     <div class="layout">
-      <!-- 左：メイン -->
       <main>
         <div class="top">
           <div>
@@ -410,8 +447,8 @@
         <div class="grid" id="cards"></div>
       </main>
 
-      <!-- 右：バックログ入力パネル -->
       <aside class="side">
+        <!-- Backlog パネル -->
         <div class="panel">
           <div class="panelHead">
             <div>
@@ -429,11 +466,51 @@
             </div>
           </div>
         </div>
+
+        <!-- 勤務時間 パネル（赤枠位置に相当） -->
+        <div class="panel" id="shiftPanel">
+          <div class="panelHead">
+            <div>
+              <h3>勤務時間</h3>
+              <div class="small">実働時間で HC/LH を計算（終了が開始より早い場合は翌日扱い）</div>
+            </div>
+          </div>
+
+          <div class="panelBody">
+            <div class="metaGrid">
+              <div class="field">
+                <span>開始</span>
+                <div class="inputWrap">
+                  <input type="time" id="startTime" value="08:00">
+                </div>
+              </div>
+
+              <div class="field">
+                <span>終了</span>
+                <div class="inputWrap">
+                  <input type="time" id="endTime" value="17:00">
+                </div>
+              </div>
+
+              <div class="field">
+                <span>休憩</span>
+                <div class="inputWrap">
+                  <input type="number" id="breakHours" value="1" step="0.25" min="0">
+                  <div class="unit">h</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="metaRow">
+              <div class="label">実働時間</div>
+              <div class="value" id="effectiveHours">8.00h</div>
+            </div>
+          </div>
+        </div>
       </aside>
     </div>
   </div>
 
-  <!-- 下固定サマリー -->
   <div class="footer" id="footer">
     <div class="footerInner" id="footerInner">
       <div class="sumGrid">
@@ -458,8 +535,6 @@
   </div>
 
 <script>
-  const SHIFT_HOURS = 8;
-
   const processes = [
     { name:"Check In",     color:"#3498db" },
     { name:"IDRT",         color:"#2ecc71" },
@@ -470,7 +545,6 @@
   const cards = document.getElementById("cards");
   const backlogPanel = document.getElementById("backlogPanel");
 
-  // 工程カード作成
   function makeCard(p, i){
     const card = document.createElement("div");
     card.className = "card";
@@ -504,7 +578,7 @@
           <div class="field full">
             <span>平均処理能力</span>
             <div class="inputWrap">
-              <input type="number" id="rate${i}" value="1" step="1">
+              <input type="number" id="rate${i}" value="1" step="1" min="0">
               <div class="unit">case/h</div>
             </div>
           </div>
@@ -519,7 +593,7 @@
           <div class="kpiBox">
             <div class="kpiLabel">必要HC</div>
             <div class="kpiValue" id="hc${i}">0.00人</div>
-            <div class="sub">HC = LH ÷ ${SHIFT_HOURS}</div>
+            <div class="sub">HC = LH ÷ 実働時間</div>
           </div>
         </div>
       </div>
@@ -532,7 +606,6 @@
     return card;
   }
 
-  // Backlog入力行（パレット→ケース）
   function makeBacklogRow(p, i){
     const row = document.createElement("div");
     row.className = "row";
@@ -551,7 +624,7 @@
         <div class="miniField">
           <span>パレット数</span>
           <div class="inputWrap">
-            <input type="number" id="pal${i}" value="0" step="1">
+            <input type="number" id="pal${i}" value="0" step="1" min="0">
             <div class="unit">plt</div>
           </div>
         </div>
@@ -559,7 +632,7 @@
         <div class="miniField">
           <span>ケース/パレット</span>
           <div class="inputWrap">
-            <input type="number" id="cpp${i}" value="0" step="1">
+            <input type="number" id="cpp${i}" value="0" step="1" min="0">
             <div class="unit">case</div>
           </div>
         </div>
@@ -576,7 +649,12 @@
   // 初期生成
   processes.forEach((p,i)=> cards.appendChild(makeCard(p,i)));
   processes.forEach((p,i)=> backlogPanel.appendChild(makeBacklogRow(p,i)));
+
+  // 入力イベント
   document.getElementById("shiftHC").addEventListener("input", calc);
+  document.getElementById("startTime").addEventListener("input", calc);
+  document.getElementById("endTime").addEventListener("input", calc);
+  document.getElementById("breakHours").addEventListener("input", calc);
 
   // 表示系
   function fmt(value, unit){
@@ -588,7 +666,39 @@
     document.getElementById(id).innerHTML = html;
   }
 
-  // Backlog(case) プレビュー更新
+  // 時刻 "HH:MM" -> 分
+  function timeToMinutes(t){
+    if(!t || typeof t !== "string" || !t.includes(":")) return NaN;
+    const [hh, mm] = t.split(":").map(n => Number(n));
+    if(!Number.isFinite(hh) || !Number.isFinite(mm)) return NaN;
+    return hh * 60 + mm;
+  }
+
+  // 実働時間（h）を計算：終了 < 開始なら翌日扱い
+  function getEffectiveHours(){
+    const s = document.getElementById("startTime").value;
+    const e = document.getElementById("endTime").value;
+    const b = Number(document.getElementById("breakHours").value);
+
+    const sm = timeToMinutes(s);
+    const em0 = timeToMinutes(e);
+    let em = em0;
+
+    if(!Number.isFinite(sm) || !Number.isFinite(em)) return 8; // フォールバック
+
+    if(em < sm) em += 24 * 60; // 翌日
+
+    const rawMin = em - sm;
+    const breakMin = (Number.isFinite(b) ? b : 0) * 60;
+
+    const effMin = Math.max(0, rawMin - breakMin);
+    const effH = effMin / 60;
+
+    // 0だと割り算が壊れるので最低0.25hに丸め（現場的にここは好みで調整可）
+    return Math.max(0.25, effH);
+  }
+
+  // Backlog(case)
   function getBacklogCaseFromPanel(i){
     const pal = Number(document.getElementById(`pal${i}`).value);
     const cpp = Number(document.getElementById(`cpp${i}`).value);
@@ -603,15 +713,13 @@
     }
   }
 
-  // 反映ボタン：Backlogへ流し込み
+  // 反映
   document.getElementById("applyBacklog").addEventListener("click", ()=>{
     for(let i=0;i<processes.length;i++){
       const val = getBacklogCaseFromPanel(i);
-      const target = document.getElementById(`backlog${i}`);
-      target.value = Math.round(val);
+      document.getElementById(`backlog${i}`).value = Math.round(val);
     }
     calc();
-    // 入力を触りやすくするため、最初のBacklogへフォーカス
     document.getElementById("backlog0").focus();
   });
 
@@ -626,6 +734,9 @@
 
   // 計算本体
   function calc(){
+    const shiftHours = getEffectiveHours();
+    document.getElementById("effectiveHours").textContent = `${shiftHours.toFixed(2)}h`;
+
     let totalLH = 0;
     let totalHC = 0;
 
@@ -638,9 +749,10 @@
       if(rate > 0){
         lh = (fcst + backlog) / rate;
       }else{
-        lh = 0; // 0以下は計算不可なので0扱い
+        lh = 0;
       }
-      const hc = lh / SHIFT_HOURS;
+
+      const hc = lh / shiftHours;
 
       totalLH += lh;
       totalHC += hc;
@@ -650,10 +762,10 @@
     }
 
     const shiftHC = Number(document.getElementById("shiftHC").value);
-    const availableLH = shiftHC * SHIFT_HOURS;
+    const availableLH = shiftHC * shiftHours;
 
-    const diffLH = availableLH - totalLH; // マイナスなら不足
-    const diffHC = shiftHC - totalHC;     // マイナスなら不足
+    const diffLH = availableLH - totalLH;
+    const diffHC = shiftHC - totalHC;
 
     setHTML("totalLH", fmt(totalLH, "h"));
     setHTML("totalHC", fmt(totalHC, "人"));
@@ -669,12 +781,27 @@
     document.documentElement.style.setProperty("--footer-h", `${h}px`);
   }
 
-  // 0を消さずに上書きできる（クリックで全選択）
+  // Smart Input：数値はクリックで全選択。timeも可能な範囲で選択。
   function enableSmartInput() {
+    // number
     document.querySelectorAll('input[type="number"]').forEach(inp => {
       const selectAll = () => setTimeout(() => inp.select(), 0);
       inp.addEventListener('focus', selectAll);
       inp.addEventListener('click', selectAll);
+    });
+
+    // time（ブラウザによって挙動差があるので安全に）
+    document.querySelectorAll('input[type="time"]').forEach(inp => {
+      const trySelect = () => {
+        setTimeout(() => {
+          try{
+            // 一部ブラウザではselectが効く
+            if(typeof inp.select === "function") inp.select();
+          }catch(e){}
+        }, 0);
+      };
+      inp.addEventListener('focus', trySelect);
+      inp.addEventListener('click', trySelect);
     });
   }
 
@@ -688,8 +815,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
