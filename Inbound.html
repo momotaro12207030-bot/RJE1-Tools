@@ -424,116 +424,173 @@
       font-weight: 900;
       letter-spacing:.02em;
     }
+    /* --- サイドバーとガイドのスタイル --- */
+body { display: flex; min-height: 100vh; } /* 横並びにするため */
+
+.sidebar {
+  width: 240px;
+  background: #111827;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  z-index: 100;
+}
+
+.nav-top { padding: 24px 16px; flex-grow: 1; }
+.nav-title { font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: bold; }
+.nav-btn {
+  width: 100%; padding: 12px; border: none; border-radius: 8px;
+  background: transparent; color: #9ca3af; text-align: left;
+  font-size: 14px; font-weight: 800; cursor: pointer; margin-bottom: 4px;
+}
+.nav-btn.active { background: #fff; color: #111827; }
+
+/* 説明書（ガイド） */
+.guide-container { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
+.guide-box { font-size: 11px; }
+.guide-title { font-size: 13px; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.guide-item { display: flex; gap: 8px; margin-bottom: 10px; line-height: 1.4; }
+.guide-num {
+  flex: 0 0 18px; height: 18px; background: #2563eb; color: #fff;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;
+}
+.guide-text b { display: block; color: #e5e7eb; margin-bottom: 2px; }
+.guide-text span { color: #9ca3af; }
+
+/* メイン領域の余白設定 */
+.main-content { margin-left: 240px; flex: 1; width: 100%; }
+
+/* レスポンシブ対応：画面が狭いときはサイドバーを隠す */
+@media (max-width: 1200px){
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; }
+  .footer { left: 12px !important; }
+}
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="layout">
-      <main>
-        <div class="top">
-          <div>
-            <h1>作業時間・HC計算</h1>
-            <p class="hint">FCST / Backlog（case）と能力（case/h）から LH と HC を算出。不足は「出勤 − 必要」で表示。</p>
-          </div>
-
-          <div class="pill">
-            <label for="shiftHC">出勤HC</label>
-            <input id="shiftHC" type="number" value="0" min="0" step="1" />
-            <span class="unit">人</span>
-          </div>
-        </div>
-
-        <div class="grid" id="cards"></div>
-      </main>
-
-      <aside class="side">
-        <!-- Backlog パネル -->
-        <div class="panel">
-          <div class="panelHead">
-            <div>
-              <h3>Backlog入力（パレット → ケース）</h3>
-              <div class="small">Backlog(case) = パレット数 × パレットあたりケース数</div>
-            </div>
-          </div>
-
-          <div class="panelBody" id="backlogPanel"></div>
-
-          <div class="panelBody">
-            <div class="btns">
-              <button class="btn primary" id="applyBacklog">反映（Backlogへ）</button>
-              <button class="btn ghost" id="clearBacklog">クリア</button>
-              <button class="btn ghost" id="resetAll" style="color:var(--neg); font-size:11px;">全入力リセット</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 勤務時間 パネル（赤枠位置に相当） -->
-        <div class="panel" id="shiftPanel">
-          <div class="panelHead">
-            <div>
-              <h3>勤務時間</h3>
-              <div class="small">実働時間で HC/LH を計算（終了が開始より早い場合は翌日扱い）</div>
-            </div>
-          </div>
-
-          <div class="panelBody">
-            <div class="metaGrid">
-              <div class="field">
-                <span>開始</span>
-                <div class="inputWrap">
-                  <input type="time" id="startTime" value="08:00">
-                </div>
-              </div>
-
-              <div class="field">
-                <span>終了</span>
-                <div class="inputWrap">
-                  <input type="time" id="endTime" value="17:00">
-                </div>
-              </div>
-
-              <div class="field">
-                <span>休憩</span>
-                <div class="inputWrap">
-                  <input type="number" id="breakHours" value="1" step="0.25" min="0">
-                  <div class="unit">h</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="metaRow">
-              <div class="label">実働時間</div>
-              <div class="value" id="effectiveHours">8.00h</div>
-            </div>
-          </div>
-        </div>
-      </aside>
+  <aside class="sidebar">
+    <div class="nav-top">
+      <div class="nav-title">アプリ切り替え</div>
+      <button class="nav-btn active">作業時間・HC計算</button>
+      <button class="nav-btn">QR・バーコード作成</button>
     </div>
-  </div>
 
-  <div class="footer" id="footer">
-    <div class="footerInner" id="footerInner">
-      <div class="sumGrid">
-        <div class="sumBox">
-          <div class="sumLabel">合計LH</div>
-          <div class="sumValue" id="totalLH">0.00h</div>
-        </div>
-        <div class="sumBox">
-          <div class="sumLabel">合計HC</div>
-          <div class="sumValue" id="totalHC">0.00人</div>
-        </div>
-        <div class="sumBox">
-          <div class="sumLabel">不足LH（出勤LH − 必要LH）</div>
-          <div class="sumValue" id="diffLH">0.00h</div>
-        </div>
-        <div class="sumBox">
-          <div class="sumLabel">不足HC（出勤HC − 必要HC）</div>
-          <div class="sumValue" id="diffHC">0.00人</div>
+    <div class="guide-container">
+      <div class="guide-box">
+        <div class="guide-title">💡 使い方ガイド</div>
+        <ul class="guide-list">
+          <li class="guide-item">
+            <div class="guide-num">1</div>
+            <div class="guide-text">
+              <b>出勤状況を入力</b>
+              <span>右下の勤務時間と、上部の「出勤HC」をまず入力します。</span>
+            </div>
+          </li>
+          <li class="guide-item">
+            <div class="guide-num">2</div>
+            <div class="guide-text">
+              <b>物量を把握</b>
+              <span>右パネルでパレット数を入力して「反映」を押すと、各工程へ自動同期されます。</span>
+            </div>
+          </li>
+          <li class="guide-item">
+            <div class="guide-num">3</div>
+            <div class="guide-text">
+              <b>不足人数を確認</b>
+              <span>各工程の能力（case/h）を入力すると、下のフッターに過不足が表示されます。</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="wrap">
+      <div class="layout">
+        <main>
+          <div class="top">
+            <div>
+              <h1>作業時間・HC計算</h1>
+              <p class="hint">FCST / Backlog（case）と能力（case/h）から LH と HC を算出。不足は「出勤 − 必要」で表示。</p>
+            </div>
+            <div class="pill">
+              <label for="shiftHC">出勤HC</label>
+              <input id="shiftHC" type="number" value="0" min="0" step="1" />
+              <span class="unit">人</span>
+            </div>
+          </div>
+          <div class="grid" id="cards"></div>
+        </main>
+
+        <aside class="side">
+          <div class="panel">
+            <div class="panelHead">
+              <div>
+                <h3>Backlog入力（パレット → ケース）</h3>
+                <div class="small">Backlog(case) = パレット数 × パレットあたりケース数</div>
+              </div>
+            </div>
+            <div class="panelBody" id="backlogPanel"></div>
+            <div class="panelBody">
+              <div class="btns">
+                <button class="btn primary" id="applyBacklog">反映（Backlogへ）</button>
+                <button class="btn ghost" id="clearBacklog">クリア</button>
+                <button class="btn ghost" id="resetAll" style="color:var(--neg); font-size:11px;">全入力リセット</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="shiftPanel">
+            <div class="panelHead">
+              <div>
+                <h3>勤務時間</h3>
+                <div class="small">実働時間で HC/LH を計算</div>
+              </div>
+            </div>
+            <div class="panelBody">
+              <div class="metaGrid">
+                <div class="field">
+                  <span>開始</span>
+                  <div class="inputWrap"><input type="time" id="startTime" value="08:00"></div>
+                </div>
+                <div class="field">
+                  <span>終了</span>
+                  <div class="inputWrap"><input type="time" id="endTime" value="17:00"></div>
+                </div>
+                <div class="field">
+                  <span>休憩</span>
+                  <div class="inputWrap">
+                    <input type="number" id="breakHours" value="1" step="0.25" min="0">
+                    <div class="unit">h</div>
+                  </div>
+                </div>
+              </div>
+              <div class="metaRow">
+                <div class="label">実働時間</div>
+                <div class="value" id="effectiveHours">8.00h</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="footer" id="footer" style="left: 252px;">
+      <div class="footerInner" id="footerInner">
+        <div class="sumGrid">
+          <div class="sumBox"><div class="sumLabel">合計LH</div><div class="sumValue" id="totalLH">0.00h</div></div>
+          <div class="sumBox"><div class="sumLabel">合計HC</div><div class="sumValue" id="totalHC">0.00人</div></div>
+          <div class="sumBox"><div class="sumLabel">不足LH</div><div class="sumValue" id="diffLH">0.00h</div></div>
+          <div class="sumBox"><div class="sumLabel">不足HC</div><div class="sumValue" id="diffHC">0.00人</div></div>
         </div>
       </div>
     </div>
-  </div>
+  </div> 
 
 <script>
   const processes = [
