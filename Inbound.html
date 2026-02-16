@@ -463,6 +463,7 @@
             <div class="btns">
               <button class="btn primary" id="applyBacklog">反映（Backlogへ）</button>
               <button class="btn ghost" id="clearBacklog">クリア</button>
+              <button class="btn ghost" id="resetAll" style="color:var(--neg); font-size:11px;">全入力リセット</button>
             </div>
           </div>
         </div>
@@ -732,6 +733,52 @@
     }
   });
 
+  // 1. 保存関数
+  function saveToLocal() {
+    const data = {
+      shiftHC: document.getElementById("shiftHC").value,
+      startTime: document.getElementById("startTime").value,
+      endTime: document.getElementById("endTime").value,
+      breakHours: document.getElementById("breakHours").value,
+      processes: processes.map((_, i) => ({
+        fcst: document.getElementById(`fcst${i}`).value,
+        backlog: document.getElementById(`backlog${i}`).value,
+        rate: document.getElementById(`rate${i}`).value,
+        pal: document.getElementById(`pal${i}`).value,
+        cpp: document.getElementById(`cpp${i}`).value
+      }))
+    };
+    localStorage.setItem('workApp_save_data', JSON.stringify(data));
+  }
+  document.addEventListener("input", saveToLocal);
+
+  // 2. 復元関数
+  function loadFromLocal() {
+    const saved = localStorage.getItem('workApp_save_data');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    if (data.shiftHC) document.getElementById("shiftHC").value = data.shiftHC;
+    if (data.startTime) document.getElementById("startTime").value = data.startTime;
+    if (data.endTime) document.getElementById("endTime").value = data.endTime;
+    if (data.breakHours) document.getElementById("breakHours").value = data.breakHours;
+    if (data.processes) {
+      data.processes.forEach((p, i) => {
+        if (document.getElementById(`fcst${i}`)) document.getElementById(`fcst${i}`).value = p.fcst;
+        if (document.getElementById(`backlog${i}`)) document.getElementById(`backlog${i}`).value = p.backlog;
+        if (document.getElementById(`rate${i}`)) document.getElementById(`rate${i}`).value = p.rate;
+        if (document.getElementById(`pal${i}`)) document.getElementById(`pal${i}`).value = p.pal;
+        if (document.getElementById(`cpp${i}`)) document.getElementById(`cpp${i}`).value = p.cpp;
+      });
+    }
+  }
+
+  // 3. 全リセット処理
+  document.getElementById("resetAll").addEventListener("click", () => {
+    if (!confirm("すべての入力をリセットしますか？")) return;
+    localStorage.removeItem('workApp_save_data');
+    location.reload(); // ページをリロードして初期状態に戻す
+  });
+
   // 計算本体
   function calc(){
     const shiftHours = getEffectiveHours();
@@ -807,7 +854,8 @@
 
   window.addEventListener("resize", adjustFooterSpace);
   window.addEventListener("orientationchange", adjustFooterSpace);
-
+  
+  loadFromLocal();
   updateBacklogPreview();
   adjustFooterSpace();
   calc();
