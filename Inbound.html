@@ -874,6 +874,27 @@
     document.getElementById("backlog0").focus();
   });
 
+  // 入力値をLocalStorageに保存する関数
+  function saveToLocal() {
+    const data = {
+      shiftHC: document.getElementById("shiftHC").value,
+      startTime: document.getElementById("startTime").value,
+      endTime: document.getElementById("endTime").value,
+      breakHours: document.getElementById("breakHours").value,
+      // 工程ごとのFCST、能力、Backlogも保存
+      processes: processes.map((_, i) => ({
+        fcst: document.getElementById(`fcst${i}`).value,
+        backlog: document.getElementById(`backlog${i}`).value,
+        rate: document.getElementById(`rate${i}`).value
+      }))
+    };
+    localStorage.setItem('workApp_save_data', JSON.stringify(data));
+  }
+
+  // すべての入力イベントに保存処理を紐付ける
+  document.addEventListener("input", saveToLocal);
+  // --- ここまで追加 ---
+
   // クリア
   document.getElementById("clearBacklog").addEventListener("click", ()=>{
     for(let i=0;i<processes.length;i++){
@@ -949,6 +970,27 @@
     });
   }
 
+  // ページ読み込み時にLocalStorageから復元
+  function loadFromLocal() {
+    const saved = localStorage.getItem('workApp_save_data');
+    if (!saved) return;
+    
+    const data = JSON.parse(saved);
+    if (data.shiftHC) document.getElementById("shiftHC").value = data.shiftHC;
+    if (data.startTime) document.getElementById("startTime").value = data.startTime;
+    if (data.endTime) document.getElementById("endTime").value = data.endTime;
+    if (data.breakHours) document.getElementById("breakHours").value = data.breakHours;
+    
+    if (data.processes) {
+      data.processes.forEach((p, i) => {
+        if (document.getElementById(`fcst${i}`)) document.getElementById(`fcst${i}`).value = p.fcst;
+        if (document.getElementById(`backlog${i}`)) document.getElementById(`backlog${i}`).value = p.backlog;
+        if (document.getElementById(`rate${i}`)) document.getElementById(`rate${i}`).value = p.rate;
+      });
+    }
+  }
+
+  loadFromLocal(); // 復元を実行
   updateBacklogPreview();
   calc();
   setTimeout(enableSmartInput, 0);
