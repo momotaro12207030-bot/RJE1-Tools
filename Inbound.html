@@ -1018,13 +1018,21 @@
   const navButtons = document.querySelectorAll(".navBtn");
   const appViews = document.querySelectorAll(".appView");
 
+  function switchApp(target) {
+    if (!target || !document.getElementById(target)) return;
+    appViews.forEach(view => view.classList.toggle("active", view.id === target));
+    navButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.app === target));
+  }
+
   navButtons.forEach(btn => {
+    if (!btn.dataset.app) return;
     btn.addEventListener("click", () => {
-      const target = btn.dataset.app;
-      navButtons.forEach(b => b.classList.toggle("active", b === btn));
-      appViews.forEach(view => view.classList.toggle("active", view.id === target));
+      switchApp(btn.dataset.app);
     });
   });
+
+  const initialApp = new URLSearchParams(window.location.search).get("app");
+  if (initialApp) switchApp(initialApp);
 
   const codeList = document.getElementById("codeList");
   const addCodeItemBtn = document.getElementById("addCodeItem");
