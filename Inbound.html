@@ -572,6 +572,7 @@
     <aside class="navSidebar">
       <p class="navTitle">アプリ切り替え</p>
       <button class="navBtn active" data-app="workApp">作業時間・HC計算</button>
+      <a class="navBtn" href="Outbound.html">Outbound計算</a>
       <button class="navBtn" data-app="codeApp">QR・バーコード作成</button>
       <a class="navLink" href="https://github.com/momotaro12207030-bot/RJE1-Tools#readme" target="_blank" rel="noopener">使い方</a>
     </aside>
@@ -1017,13 +1018,21 @@
   const navButtons = document.querySelectorAll(".navBtn");
   const appViews = document.querySelectorAll(".appView");
 
+  function switchApp(target) {
+    if (!target || !document.getElementById(target)) return;
+    appViews.forEach(view => view.classList.toggle("active", view.id === target));
+    navButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.app === target));
+  }
+
   navButtons.forEach(btn => {
+    if (!btn.dataset.app) return;
     btn.addEventListener("click", () => {
-      const target = btn.dataset.app;
-      navButtons.forEach(b => b.classList.toggle("active", b === btn));
-      appViews.forEach(view => view.classList.toggle("active", view.id === target));
+      switchApp(btn.dataset.app);
     });
   });
+
+  const initialApp = new URLSearchParams(window.location.search).get("app");
+  if (initialApp) switchApp(initialApp);
 
   const codeList = document.getElementById("codeList");
   const addCodeItemBtn = document.getElementById("addCodeItem");
