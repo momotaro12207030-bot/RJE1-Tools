@@ -34,7 +34,7 @@
   }
 
   .container {
-    max-width: 760px;
+    max-width: 1480px;
     margin: 0 auto;
   }
 
@@ -91,13 +91,13 @@
 
   .mainView {
     flex: 1;
-    padding: 2rem 1rem;
+    padding: 2rem 1.5rem;
   }
 
 
   .contentGrid {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(360px, 1fr);
+    grid-template-columns: minmax(720px, 1.45fr) minmax(520px, 1fr);
     gap: 1rem;
     align-items: start;
   }
@@ -238,7 +238,7 @@
 
   .staff-row {
     display: grid;
-    grid-template-columns: 1fr 120px 120px 36px;
+    grid-template-columns: minmax(220px, 1.8fr) 120px 120px 36px;
     align-items: center;
     gap: 0.75rem;
     padding: 0.6rem 1rem;
@@ -275,7 +275,7 @@
   }
   .staff-input:focus { border-color: var(--accent); }
   .staff-input::-webkit-inner-spin-button { display: none; }
-  .staff-input.name { text-align: left; }
+  .staff-input.name { text-align: left; min-width: 220px; }
   .staff-input::placeholder { font-size: 0.5rem; }
 
   .delete-btn {
@@ -321,6 +321,13 @@
     border-radius: 99px;
     transition: width 0.4s ease, background 0.3s;
     max-width: 100%;
+  }
+
+
+  @media (max-width: 1320px) {
+    .contentGrid {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
 
